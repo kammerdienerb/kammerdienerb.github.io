@@ -1,101 +1,18 @@
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>bJou</title>
-    <style type="text/css">
-        body{
-            margin: 90px auto;
-            max-width:650px;
-            line-height:1.6;
-            font-size:18px;
-            color:#444;
-            padding: 0 10px
-        }
-        h1,h2,h3{line-height:1.2}
-        .topnav {
-            background-color: #2E3340;
-            z-index: 10000;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            padding: 0px 0px;
-            overflow: hidden;
-        }
-        .topnav a {
-            float: left;
-            display: block;
-            color: #D8DEE8;
-            text-align: center;
-            padding: 14px 16px;
-            text-decoration: none;
-            font-size: 17px;
-        }
-        .topnav a:hover {
-            background-color: #8FBCBB;
-            color: #2E3340;
-        }
-        .active {
-            background-color: #8FBCBB;
-            color: #2E3340;
-        }
-
-        figure {
-            position: relative;
-        }
-        figcaption {
-            text-align:center;
-            font-size: 14px;
-            color: #555;
-        }
-
-        pre.numbered {
-            counter-reset: linecounter;
-        }
-        pre.numbered span.sl {
-            counter-increment: linecounter;
-        }
-        pre.numbered span.sl:before {
-            content: counter(linecounter);
-            width:2em;
-            display: inline-block;
-            -webkit-user-select: none;
-        }
-        .inline_code {
-            display:block;
-            overflow: auto;
-            padding: 1em 1.5em;
-            margin-bottom: 1.6em;
-            white-space:pre;
-            font-family: monospace;
-            line-height: 1.2;
-            border: 1px solid #000000;
-            border-left: 3px solid #BF6069;
-            background-color: #2E3340;
-            color: #D8DEE8;
-        }
-        span.kw {
-            color: #81A1C1;
-            font-weight: bold;
-        }
-        span.cmt {
-            color: #4C556A;
-            font-style: italic;
-        }
-        span.str {
-            color: #A3BE8B;
-        }
-    </style>
-</head>
-
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>bJou</title>
+        <link rel="stylesheet" href="styles/basic.css">
+        <link rel="stylesheet" href="styles/source_code.css">
+    </head>
 
 <div class="topnav" id="myTopnav">
   <a href="#" class="active">Home</a>
-  <a href="#">Install</a>
-  <a href="#">Learn</a>
-  <a href="#">Blog</a>
+  <a href="install.html">Install</a>
+  <a href="learn.html">Learn</a>
+  <a href="blog.html">Blog</a>
 </div>
 
 <body>
