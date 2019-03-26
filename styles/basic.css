@@ -26,9 +26,21 @@ h1,h2,h3{line-height:1.2}
     text-decoration: none;
     font-size: 17px;
 }
+.topnav a.logo_a {
+    padding: 0 0;
+}
 .topnav a:hover {
     background-color: #8FBCBB;
     color: #2E3340;
+}
+.logo {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    width: auto;
+    height: auto;
+    max-height: 55px;
+    max-width: 55px;
 }
 .topnav a.active {
     background-color: #8FBCBB;
