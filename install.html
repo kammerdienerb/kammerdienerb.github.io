@@ -11,11 +11,59 @@
 <div class="topnav" id="myTopnav">
   <a href="index.html">Home</a>
   <a href="#" class="active">Install</a>
+  <a href="features.html">Features</a>
   <a href="learn.html">Learn</a>
   <a href="blog.html">Blog</a>
 </div>
 
 <body>
-install
+<header>
+    <h1>Installing bJou</h1>
+</header>
+<p>
+Currently, the bJou compiler must be built from source. To compile bJou, ensure the following dependencies are met:
+<ul>
+    <li>A C++ compiler new enough to support the C++11 standard</li>
+    <li>An installation of LLVM at least as new as version 4.0.0</li>
+    <ul>
+        <li>LLVM can typically be found through a package manager such as apt, pacman, or homebrew.</li>
+        <li>Alternatively LLVM source code can be downloaded <a href="http://releases.llvm.org" target="_blank">here</a> and you can build it yourself.</li>
+        <li><strong>Optional:</strong> It is recommended that you build LLVM with the <code>lld</code> linker tool enabled. If the version of LLVM used to build bJou comes with <code>lld</code>, it will embed it and use it instead of the system linker.</li>
+    </ul>
+    <li><strong>Optional: </strong>If you have Google's TCMalloc installed, bJou will be built to use it for significant performance improvements.
+        <ul>
+            <li>Read about it <a href="http://goog-perftools.sourceforge.net/doc/tcmalloc.html" target="_blank">here</a>.</li>
+            <li>Get it as a part of <a href="https://github.com/gperftools/gperftools" target="_blank">gperftools</a>.</li>
+        </ul>
+    </li>
+</ul>
+If you have those dependencies met, you can grab a copy of bJou from <a href="https://www.github.com/kammerdienerb/bJou" target="_blank">GitHub</a>:
+</p>
+<pre class="inline_code">
+<span class="sl">$ git clone https://www.github.com/kammerdienerb/bJou</span>
+</pre>
+<p>
+To build the project, simply run:
+</p>
+<pre class="inline_code">
+<span class="sl">$ ./build.sh</span>
+</pre>
+<p>
+The <code>build.sh</code> script takes these additional arguments:
+    <ul>
+        <li><strong>--build-type</strong> or just <strong>-b</strong>: accepts either "Debug" or "Release". Defaults to "Release".</li>
+        <li><strong>--install-prefix</strong> or just <strong>-i</strong>: accepts a path in which to install bJou after it is built. Defaults to a system path like <code>/usr</code> or <code>/usr/local</code>.</li>
+    </ul>
+So to build a debug version of bJou in its own directory in your home directory, you could do:
+</p>
+<pre class="inline_code">
+<span class="sl">$ ./build.sh -b Debug --install-prefix=$HOME/bjou</span>
+</pre>
+<p>
+Once bJou has successfully compiled, it can be installed to the previously specified install path:
+</p>
+<pre class="inline_code">
+<span class="sl">$ ./install.sh</span>
+</pre>
 </body>
 </html>
