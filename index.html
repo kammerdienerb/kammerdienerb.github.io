@@ -40,6 +40,28 @@
             background-color: #8FBCBB;
             color: #2E3340;
         }
+
+        figure {
+            position: relative;
+        }
+        figcaption {
+            text-align:center;
+            font-size: 14px;
+            color: #555;
+        }
+
+        pre.numbered {
+            counter-reset: linecounter;
+        }
+        pre.numbered span.sl {
+            counter-increment: linecounter;
+        }
+        pre.numbered span.sl:before {
+            content: counter(linecounter);
+            width:2em;
+            display: inline-block;
+            -webkit-user-select: none;
+        }
         .inline_code {
             display:block;
             overflow: auto;
@@ -50,8 +72,19 @@
             line-height: 1.2;
             border: 1px solid #000000;
             border-left: 3px solid #BF6069;
-            background-color: #81A1C1;
-            color: #2E3340;
+            background-color: #2E3340;
+            color: #D8DEE8;
+        }
+        span.kw {
+            color: #81A1C1;
+            font-weight: bold;
+        }
+        span.cmt {
+            color: #4C556A;
+            font-style: italic;
+        }
+        span.str {
+            color: #A3BE8B;
         }
     </style>
 </head>
@@ -59,6 +92,7 @@
 
 <div class="topnav" id="myTopnav">
   <a href="#" class="active">Home</a>
+  <a href="#">Install</a>
   <a href="#">Learn</a>
   <a href="#">Blog</a>
 </div>
@@ -71,65 +105,26 @@
         Find it on <a href="https://www.github.com/kammerdienerb/bJou">GitHub</a>.
     </p>
 
-<code class="inline_code"># bjou.bjou
-
-main()
-
-import "cli.bjou"
-import "ui.bjou"
-using import "compilation.bjou"
-
-proc main() {
-    arg_parser := cli::ArgParser.create(env.args()[0].c_str())
-    arg_parser.add_args_to_parser()
-    p := arg_parser.help()
-    print "%", p.c_str()
-    arg_parser.free()
-   
-    args := ui::argset.create()
-
-    start_default_compilation(args)
-
-    print "bye!"
-}
-
-proc add_args_to_parser(arg_parser : cli::ArgParser ref) {
-    arg_parser.addSwitch('O', "optimize")
-        .withDesc("Run LLVM optimization passes.")
-    arg_parser.addSwitch("emit-llvm")
-        .withDesc("Ouput an LLVM bytecode file.")
-    arg_parser.addSwitch('c', "no-link")
-        .withDesc("Compile but do not link.")
-    arg_parser.addSwitch("no-lld")
-        .withDesc("Use the system linker instead of attempting to use lld.")
-    arg_parser.addSwitch("no-color")
-        .withDesc("Turn off colored output.")
-    arg_parser.addSwitch("no-preload")
-        .withDesc("Do not automatically import preload modules.")
-    arg_parser.addSwitch("no-abc")
-        .withDesc("Turn off array bounds checking.")
-    arg_parser.addSwitch("no-parallel")
-        .withDesc("Turn off compilation parallelization.")
-    arg_parser.addSwitch("symbols")
-        .withDesc("Print symbol tables to STDOUT.")
-    arg_parser.addSwitch("time")
-        .withDesc("Print the running times of compilation stages to STDOUT.")
-    arg_parser.addSwitch("front")
-        .withDesc("Only run the front end of the compiler.")
-    arg_parser.addSwitch('v', "verbose")
-        .withDesc("Print the LLVM IR to STDOUT.")
-    arg_parser.addSwitch("version")
-        .withDesc("Display version info and exit.")
-    arg_parser.addSwitch('h', "help")
-        .withDesc("Display usage info and exit.")
-
-    I := arg_parser.addValueString('I', "searchpath")
-        .withDesc("Add a path to search when looking for modules.")
-    arg_parser.addValueString('l', "link")
-        .withDesc("Add the name of a library to link.")
-    arg_parser.addValueString('o', "output")
-        .withDesc("Specify the name of the target output file.")
-}</code>
+    <figure>
+<pre class="inline_code numbered">
+<span class="sl"><span class="kw">using</span> <span class="kw">import</span> <span class="str">"compiler.bjou"</span></span>
+<span class="sl"></span>
+<span class="sl"><span class="cmt"># run this at compile time</span></span>
+<span class="sl"><span class="kw">\static_do</span> {</span>
+<span class="sl">    <span class="cmt"># create the AST</span></span>
+<span class="sl">    message := bjou_createStringLiteral(<span class="str">"Hello, world!\n"</span>)</span>
+<span class="sl">    args    := bjou_createArgList(&amp;message, 1)</span>
+<span class="sl">    ident   := bjou_createIdentifier("printf")</span>
+<span class="sl">    call    := bjou_createCallExpression(ident, args)</span>
+<span class="sl"></span>
+<span class="sl">    <span class="cmt"># add to global scope</span></span>
+<span class="sl">    bjou_addSymbols(call, bjou_getGlobalScope())</span>
+<span class="sl"></span>
+<span class="sl">    <span class="cmt"># add to our program</span></span>
+<span class="sl">    bjou_appendNode(call)</span>
+<span class="sl">}</span></pre>
+<figcaption> Building "Hello, world!" at compile time</figcaption>
+    </figure>
 
 </body>
 </html>
