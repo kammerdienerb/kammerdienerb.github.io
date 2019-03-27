@@ -17,21 +17,20 @@ h1,h2,h3{line-height:1.2}
     padding: 0px 0px;
     overflow: hidden;
 }
-.topnav a {
+.topnav .nav_a, .logo_a {
     float: left;
     display: block;
     color: #D8DEE8;
     text-align: center;
-    padding: 14px 10px;
+    padding: 14px 16px;
     text-decoration: none;
     font-size: 17px;
 }
-.topnav a.logo_a {
+.topnav .logo_a {
     padding: 0 0;
 }
-.topnav a:hover {
-    background-color: #8FBCBB;
-    color: #2E3340;
+.topnav .nav_a:hover {
+    background-color: #4C556A;
 }
 .logo {
     display: block;
@@ -57,9 +56,23 @@ h1,h2,h3{line-height:1.2}
     color: #2E3340;
 }
 
-.topnav a.active {
+.topnav .logo_a.active, .nav_a.active{
     background-color: #8FBCBB;
     color: #2E3340;
+}
+
+@media only screen and (max-width : 600px) {
+    .topnav #logo_link {
+        width: 100%;
+    }
+    #navlinks {
+        display:block;
+        float: left;
+        clear: left;
+    }
+    body{
+        margin: 140px auto;
+    }
 }
 
 figure {
