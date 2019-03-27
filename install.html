@@ -9,7 +9,7 @@
     </head>
 
 <div class="topnav" id="myTopnav">
-    <a href="index.html" class="logo_a"><img class="logo" src="images/logo_white.png"/></a>
+    <a href="index.html" class="logo_a"><img class="logo" src="images/logo_white.png"/><span class="logo_text">bJou</span></a>
     <a href="#" class="active">Install</a>
     <a href="features.html">Features</a>
     <a href="learn.html">Learn</a>
@@ -28,7 +28,7 @@ Currently, the bJou compiler must be built from source. To compile bJou, ensure 
     <ul>
         <li>LLVM can typically be found through a package manager such as apt, pacman, or homebrew.</li>
         <li>Alternatively LLVM source code can be downloaded <a href="http://releases.llvm.org" target="_blank">here</a> and you can build it yourself.</li>
-        <li><strong>Optional:</strong> It is recommended that you build LLVM with the <code>lld</code> linker tool enabled. If the version of LLVM used to build bJou comes with <code>lld</code>, it will embed it and use it instead of the system linker.</li>
+        <li><strong>Optional:</strong> It is recommended that you build LLVM with the <code>lld</code> linker tool enabled. If the version of LLVM used to build bJou comes with <code>lld</code>, it will be embedded into bJou and bJou will try to use it instead of the system linker.</li>
     </ul>
     <li><strong>Optional: </strong>If you have Google's TCMalloc installed, bJou will be built to use it for significant performance improvements.
         <ul>
@@ -53,11 +53,12 @@ The <code>build.sh</code> script takes these additional arguments:
     <ul>
         <li><strong>--build-type</strong> or just <strong>-b</strong>: accepts either "Debug" or "Release". Defaults to "Release".</li>
         <li><strong>--install-prefix</strong> or just <strong>-i</strong>: accepts a path in which to install bJou after it is built. Defaults to a system path like <code>/usr</code> or <code>/usr/local</code>.</li>
+        <li><strong>--llvm-config</strong> or just <strong>-l</strong>: accepts a path to an <code>llvm-config</code> executable for the installation of LLVM you wish to use. If this flag is not provided, this will try to be determined automatically.</li>
     </ul>
-So to build a debug version of bJou in its own directory in your home directory, you could do:
+As an example, if you wanted to build a debug version of bJou in its own directory in your home directory with a version of LLVM also located in your home directory, you could do:
 </p>
 <pre class="inline_code">
-<span class="sl">$ ./build.sh -b Debug --install-prefix=$HOME/bjou</span>
+<span class="sl">$ ./build.sh -b Debug --install-prefix ~/bjou --llvm-config ~/llvm/bin/llvm-config</span>
 </pre>
 <p>
 Once bJou has successfully compiled, it can be installed to the previously specified install path:
