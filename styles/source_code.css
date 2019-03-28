@@ -34,3 +34,6 @@ span.cmt {
 span.str {
     color: #A3BE8B;
 }
+span.prompt {
+    -webkit-user-select: none;
+}
