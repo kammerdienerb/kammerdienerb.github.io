@@ -1,10 +1,14 @@
+html {
+    min-height:100%;
+    padding-bottom: 80px;
+    position:relative;
+}
 body{
     margin: 90px auto;
     max-width:650px;
     line-height:1.6;
     font-size:18px;
     color:#444;
-    padding: 0 10px
 }
 h1,h2,h3{line-height:1.2}
 .topnav {
@@ -60,24 +64,32 @@ h1,h2,h3{line-height:1.2}
 }
 
 footer {
-    margin: 0 auto;
-    height: 30px;
-    padding-top: 20px;
-    width: 100%;
+    background-color: #8FBCBB;
     text-align: center;
+    position:absolute;
+    bottom:0;
+    left: 0;
+    width:100%;
+    height: 130px;
+    margin: auto 0 auto 0;
 }
 footer ul {
-    margin: 0px;
-    padding: 0;
+    padding: 0 0 0 0;
+    margin: 24px 0 0 0;
 }
 footer li {
-    display: inline;
+    display:inline-block;
+    height: 100%;
 }
 footer li a {
     text-decoration: none;
 }
 footer li a img {
     max-width: 64px;
+}
+footer .foot_txt {
+    font-size: 14px;
+    text-align: center;
 }
 
 @media only screen and (max-width : 600px) {
