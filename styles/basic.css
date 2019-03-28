@@ -29,9 +29,6 @@ h1,h2,h3{line-height:1.2}
 .topnav .logo_a {
     padding: 0 0;
 }
-.topnav .nav_a:hover {
-    background-color: #4C556A;
-}
 .logo {
     display: block;
     margin-left: auto;
@@ -50,11 +47,13 @@ h1,h2,h3{line-height:1.2}
     font-size: 20px;
     line-height: 55px;
 }
-
-.logo_text.active {
+.topnav .logo_a:hover, .nav_a:hover {
+    color: #D8DEE8;
+    background-color: #4C556A;
+}
+.topnav .logo_text.active {
     color: #2E3340;
 }
-
 .topnav .logo_a.active, .nav_a.active{
     background-color: #8FBCBB;
     color: #2E3340;
