@@ -60,6 +60,27 @@ h1,h2,h3{line-height:1.2}
     color: #2E3340;
 }
 
+footer {
+    margin: 0 auto;
+    height: 30px;
+    padding-top: 20px;
+    width: 100%;
+    text-align: center;
+}
+footer ul {
+    margin: 0px;
+    padding: 0;
+}
+footer li {
+    display: inline;
+}
+footer li a {
+    text-decoration: none;
+}
+footer li a img {
+    max-width: 64px;
+}
+
 @media only screen and (max-width : 600px) {
     .topnav #logo_link {
         width: 100%;

@@ -21,10 +21,12 @@
 
 <body>
 <header>
-    <h1>bJou is a programming language.</h1>
+    <h1>Program effectively. Compile quickly. Run fast code.</h1>
 </header>
 <p>
-    Find it on <a href="https://www.github.com/kammerdienerb/bJou">GitHub</a>.
+bJou is a simple systems programming language that focuses on speed and effectiveness in both the process of programming and the generated programs.
+While the core of the language is relatively simple, bJou allows for limitless power of expressiveness through compile-time metaprogramming.
+    <a href="install.html">Try it out</a> and <a href="learn.html">learn more</a>.
 </p>
 
 <figure>
@@ -39,7 +41,7 @@
 <span class="sl">    ident   := bjou_createIdentifier("printf")</span>
 <span class="sl">    call    := bjou_createCallExpression(ident, args)</span>
 <span class="sl"></span>
-<span class="sl">    <span class="cmt"># add to global scope</span></span>
+<span class="sl">    <span class="cmt"># register symbols</span></span>
 <span class="sl">    bjou_addSymbols(call, bjou_getGlobalScope())</span>
 <span class="sl"></span>
 <span class="sl">    <span class="cmt"># add to our program</span></span>
@@ -49,4 +51,10 @@
 </figure>
 
 </body>
+<footer>
+    <ul>
+        <li><a href="https://www.github.com/kammerdienerb/bJou" target="_blank"><img src="images/GitHub-Mark-120px-plus.png"/></a></li>
+        <li><a href="https://discord.gg/ZuDqxb8" target="_blank"><img src="images/Discord-Logo-Color.png"/></a></li>
+    </ul>
+</footer>
 </html>

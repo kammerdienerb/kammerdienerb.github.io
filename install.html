@@ -44,8 +44,9 @@ If you have those dependencies met, you can grab a copy of bJou from <a href="ht
 <pre class="inline_code">
 <span class="sl">$ git clone https://www.github.com/kammerdienerb/bJou</span>
 </pre>
+<h2>Using the Build Script</h2>
 <p>
-To build the project, simply run:
+To build the project using the included build script, simply run:
 </p>
 <pre class="inline_code">
 <span class="sl">$ ./build.sh</span>
@@ -68,5 +69,33 @@ Once bJou has successfully compiled, it can be installed to the previously speci
 <pre class="inline_code">
 <span class="sl">$ ./install.sh</span>
 </pre>
+<h2>Using CMake Directly</h2>
+<p>
+bJou is a CMake-based project, so if you wish to have more control over the build, you can use the standard CMake build procedure to compile.
+The following variables can be changed:
+    <ul>
+        <li><strong>LLVM_CONFIG</strong>: the path the the <code>llvm-config</code> executable.</li>
+        <li><strong>BJOU_USE_COLOR</strong>: Turn on/off colored output from the bJou compiler.</li>
+    </ul>
+To build, create a build directory:
+<pre class="inline_code">
+<span class="sl">$ mkdir /path/to/build/dir &amp;&amp; cd /path/to/build/dir</span>
+</pre>
+Run CMake:
+<pre class="inline_code">
+<span class="sl">$ cmake /path/to/bjou</span>
+</pre>
+Build and install:
+<pre class="inline_code">
+<span class="sl">$ make &amp;&amp; make install</span>
+</pre>
+<strong>Note</strong>: if you didn't build bJou with <code>build.sh</code>, <strong>DO NOT</strong> use <code>install.sh</code>.
+</p>
 </body>
+<footer>
+    <ul>
+        <li><a href="https://www.github.com/kammerdienerb/bJou" target="_blank"><img src="images/GitHub-Mark-120px-plus.png"/></a></li>
+        <li><a href="https://discord.gg/ZuDqxb8" target="_blank"><img src="images/Discord-Logo-Color.png"/></a></li>
+    </ul>
+</footer>
 </html>
