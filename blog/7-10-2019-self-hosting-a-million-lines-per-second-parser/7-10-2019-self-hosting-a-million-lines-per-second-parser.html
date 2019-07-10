@@ -32,14 +32,14 @@
     </p>
 
     <p>
-        Now, some people don't fully realize this, but computers are <b>FAST</b> and so I want bJou's new compiler to be as fast as it possibly can to provide the best experience for people who write code in bJou.
-        The usual first step to writing a compiler is to implement the part responsible for reading source files, tokenizing their contents (also called lexing or scanning), and parsing the tokens to create an internal data structure that represents all of the little pieces that make up the structure of a user's program.
+        Now, some people don't fully realize this, but computers are <b>FAST</b>, and so I want bJou's new compiler to be as fast as it possibly can to provide the best experience for people who write code in bJou.
+        The usual first step to writing a compiler is to implement the part responsible for reading source files, <a href=https://en.wikipedia.org/wiki/Lexical_analysis">tokenizing</a> their contents (also called lexing or scanning), and parsing the tokens to create an internal data structure that represents all of the little pieces that make up the structure of a user's program.
         This is also the time when the compiler does things like syntax checking.
         While parsing is almost never the speed bottleneck of compilers, I think it's important to take the time and effort to make every part of this new compiler as fast as I can make it.
     </p>
 
     <p>
-        With that said, I set set this goal: a user should be able to run the parser on a million lines of code and have it checked for correct syntax in one second or less.
+        With that said, I set this goal: a user should be able to run the parser on a million lines of code and have it checked for correct syntax in one second or less.
         To put that into perspective, on my machine (2013 MacBook Pro, 2.3GHz Intel i7, 16GB DDR3), <tt>clang</tt> parses roughly 50,000 LOC/s (lines of code per second), <tt>go fmt</tt> churns through about 200,000 LOC/s, and bJou's bootstrapping compiler parses ~300,000 LOC/s. 
     </p>
 
@@ -52,9 +52,9 @@
             bJou's bootstrapping compiler's parser is actually pretty fast, so I decided to mostly start with the same basic structure.
             We use a hand-written, recursive descent parser that uses a precedence climbing method for expressions.
             Additionally, there is no lexing phase -- tokenization is done in-line with parsing because the parser can generally be smarter about what kind of token to look for next.
-            One major difference is that the bootstrapping compiler (written in C++) represents the Abstract Syntax Tree (AST) as nodes allocated on the heap with pointers to their children.
+            One major difference is that the bootstrapping compiler (written in C++) represents the <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree">Abstract Syntax Tree</a> (AST) as nodes allocated on the heap with pointers to their children.
             It also relies heavily on runtime polymorphism.
-            This new compiler takes a different approach and uses bJou's sum types (also called tagged/discriminated unions) instead of inherited interfaces.
+            This new compiler takes a different approach and uses bJou's <a href="https://en.wikipedia.org/wiki/Tagged_union">sum types</a> (also called tagged/discriminated unions) instead of inherited interfaces.
             The advantage of this is that all nodes are now the same size and patching the AST becomes much easier.
             There may also be benefits related to prefetching, cache locality, and less fragmentation in the heap (although, this last point is less relevant later on).
             The type declaration for our AST type ends up looking something like this:
@@ -98,7 +98,7 @@
             Right now, we're parsing slower than the bootstrapping compiler, which won't do.
             The bootstrapping compiler uses threads to increase speed by launching parse threads in batches of <tt>N</tt> files or less where <tt>N</tt> is the number of available hardware threads.
             This is better than parsing the files in sequence, but there is an clear downside: if <tt>N - 1</tt> of the files are tiny and the remaining file is large, the <tt>N - 1</tt> threads will be sitting idle waiting for the huge file to finish.
-            Our new compiler will do better by using what's called a thread pool.
+            Our new compiler will do better by using what's called a <a href="https://en.wikipedia.org/wiki/Thread_pool">thread pool</a>.
             This will create <tt>N</tt> threads that will continuously pull jobs from a job queue and execute them.
             We'll use the <tt>threadpool</tt> bJou module:
 <pre class="inline_code">
@@ -109,15 +109,15 @@
 <pre class="inline_code numbered">
 <span class="sl">pool := threadpool.create(thread::hw_threads())</span>
 <span class="sl">...</span>
-<span class="sl"><span class="cmt"># Encounter a file to parse.</span></span>
-<span class="sl">f := frontend::open_file(path, search_paths: true)</span>
+<span class="sl"><span class="cmt"># When we encounter a file to parse:</span></span>
+<span class="sl">f := frontend::open_file(path, search_paths: <span class="kw">true</span>)</span>
 <span class="sl">p := async_parser.create(f)</span>
 <span class="sl">pool.add_task(async_parser_wrapper, p)</span>
 </pre>
         </p>
         
         <p>
-            Using this process will ensure that all hardware threads are always busy churning on files.
+            Using this method will ensure that all hardware threads are always busy churning away on files.
             Here are our new speeds:
         </p>
 
@@ -126,18 +126,178 @@
         <p>
             Nice, over 2x speedup!
             Still not good enough though, not to mention that the 10 million line input size didn't benefit at all.
-            There must be some bottlneck killing us somewhere..
+            There must be some bottleneck killing us somewhere..
             Time to break out the profiler.
         </p>
-    <h2>Allocation Bottleneck</h2>
-        <p>...</p>
+
+    <h2>Allocation and Thread Data Aggregation</h2>
+        <p>
+            Profiling our parser using the million line input gives us a pretty flame graph that you can look at and explore <a href="profile.svg">here</a>.
+            As an exercise, look and see how many of the peaks end in calls to <tt>malloc</tt>.
+            The answer is a lot.
+            Now notice the really fat section at the end for a procedure called <tt>transfer_to_fe</tt> and how much time it's taking.
+            Hmmm...
+            Let's unpack what the profiler is telling us starting with <tt>malloc</tt>.
+        </p>
+        
+        <p>
+            Using an allocator like <tt>malloc</tt> is a relatively expensive operation -- even more so when it results in a system call like <tt>sbrk</tt> or <tt>mmap</tt>.
+            Unfortunately, our profile shows that we are doing this all the time.
+            This makes sense though given how we've structured our parser.
+            Every time we create new node we create in the AST we allocate space for it and allocate the initial slab for the dynamic array that holds its children.
+            Calling <tt>malloc</tt> no less than two times per new node is slowing us down substantially.
+            To speed up our parser, we need to try to limit allocations as much as possible.
+        </p>
+
+        <p>
+            Now what about <tt>transfer_to_fe</tt>?
+            <tt>transfer_to_fe</tt> is a procedure that the threaded parsers use to move all of the stuff that they've parsed over to the main AST in the front end (<tt>fe</tt>).
+            The profile shows us that this procedure is taking a lot of time and that most of that time is spent in <tt>memmove</tt> (copying data).
+            It's extra bad if this procedure is slow because this is one of the only places in the parsing code that uses a mutex to protect the main AST data structure.
+            Put simply, if one thread is moving its data to the front end, no other thread can until it is done.
+            If this copying process is taking a long time, that's bad news.
+        </p>
+
+        <p>
+            So now our priority is to limit the number of times we call <tt>malloc</tt> and make the parser-to-front-end transfer much faster.
+            Enter, <tt>bucket_array</tt>!
+        </p>
+
+        <p>
+            <tt>bucket_array.bjou</tt> is a bJou module that gives us a generic data structure that we will use to fix some of our problems.
+            At its heart, <tt>bucket_array</tt> is essentially a linked list of arrays, or "buckets".
+            Each bucket is twice as big as the previous bucket.
+            This data structure has the following interesting properties:
+            <ul>
+                <li>
+                    <tt><b>O(log(N))</tt></b> in the number of allocations.
+                </li>
+                <li>
+                    <tt><b>O(1)</tt></b> merge operation by setting a couple of bucket links.
+                </li>
+                <li>
+                    <b>Referential stability.</b>
+                    This means that once we push an item into it, it won't be relocated out from under us.
+                    The great advantage of this is that we can keep references to the item and they won't be invalidated. 
+                </li>
+            </ul>
+
+            Using a <tt>bucket_array</tt> to store our AST nodes will obviously reduce our calls to <tt>malloc</tt>, but what about our other problems?
+            Since references into a <tt>bucket_array</tt> are stable, we can change the way our AST nodes are connected to their children.
+            Instead of holding a dynamic array that stores their children directly, nodes can now just hold individual references to each child.
+            The children are then stored in the same <tt>bucket_array</tt> as their parent.
+            This again removes an allocation (for the dynamic array) per node.
+            Finally, the work done in <tt>transfer_to_fe</tt> is reduced dramatically due to the constant time merge operation.
+            Not only do we eliminate a large linear <tt>memmove</tt>, we do exactly <b>zero</b> copying now!
+        </p>
+        
+        <p>
+            The results speak for themselves:
+        </p>
+        
         <img style="display: block; margin-left: auto; margin-right: auto; width: 75%;" src="3.png"></img>
+
+        <p>
+            Our goal has been achieved (exceeded), but that's no reason to stop.
+            We can and should do better.
+        </p>
+
     <h2>Strings</h2>
-        <p>...</p>
+        <p>
+            Unsurprisingly, parsers do a lot of work on and with strings.            
+            bJou used to come with a basic string type that does most of the nice things you can do with <tt>std::string</tt>, for example.
+            However, it was really not much more than a wrapper around a bJou dynamic array of <tt>char</tt>s.
+            This was fine, but for a high-performance parser, the cost incurred by strings allocating dynamic arrays can start to have an impact.
+        </p>
+
+        <p>
+            So, I turned to a trick used by the <tt>libc++ std::string</tt> implementation: short string optimization, or SSO.
+            The idea is to use the space that a string needs for bookkeeping to store short strings directly.
+            Here's how:
+        </p>
+
+        <p>
+            A string will need to be at least 24 bytes large (on a 64 bit architecture) to be dynamically resized.
+            This is broken down into a pointer to storage (8 bytes), a size field (8 byte integer), and a capacity field (8 byte integer).
+            If you use only 1 byte to store the length of the string and one byte to store a zero byte at the end, that gives you 22 bytes left.
+            So, you can store a short string (less than 23 bytes) directly in the string itself and avoid an allocation.
+        </p>
+        
+        <p>
+            This is a pretty neat optimization and perfect for our parser because nearly all of the strings (tokens) that the parser operates on are short!
+            Implementing this into bJou's string type gave us this speed boost:
+        </p>
+
         <img style="display: block; margin-left: auto; margin-right: auto; width: 75%;" src="4.png"></img>
+
+        <p>
+            4 million LOC/s is very very fast -- 4 times faster than our initial goal -- but speed isn't everything.
+            Before we claim success, let's look at how our parser is using memory.
+        </p>
+
     <h2>Memory Footprint</h2>
-        <p>...</p>
+        <p>
+            Since we're going to be obsessive about the new compiler's performance, I made it output some useful information that we might find relevant:
+        </p>
+
+<pre class="inline_code">
+<span class="sl">$ bjou -I src_10mil src_10mil/bjou.bjou --stats --stats-no-files</span>
+<span class="sl">Parsed 127 files: 2.619000s</span>
+<span class="sl">Front-end: 2.619000s</span>
+<span class="sl">Back-end: 0ms</span>
+<span class="sl">Grand Total: 2.619000s</span>
+<span class="sl">12915132 lines of text @ 4931322 lines/s</span>
+<span class="sl">10015203 lines of code @ 3824056 lines/s</span>
+<span class="sl">221.0MB @ 84.4MB/s</span>
+<span class="sl">Max memory usage: 4.2GB</span>
+</pre>
+
+        <p>
+            4.2 gigabytes of memory used to parse our 10 million line input.
+            While peak RSS numbers for compiling large projects with other compilers commonly gets in the GB range, we're going to want to reduce this number if we can.
+        </p>
+        
+        <p>
+            There is one area in the bootstrapping compiler that I believe can be improved and lower the memory usage for the new compiler.
+            Specifically, we are going to try to optimize code generation for a special case of sum types.
+        </p>
+        
+        <p>
+            bJou represents sum types like <tt>(string | int)</tt> by giving space enough for a tag and the largest of the sub types.
+            So,
+            <div style="text-align:center"><tt>sizeof (string | int) = sizeof string + sizeof tag_t</tt>.</div>
+            <br>
+            A common use case of sum types is to safely wrap references, e.g. <tt>(ast ref | none)</tt>, which I'll call "optional references".
+            bJou uses a 32 bit tag, so
+            <div style="text-align:center"><tt>sizeof (ast ref | none) = sizeof ast ref + sizeof tag_t = 8 + 4 = 12</tt></div>
+            With padding for alignment, this actually comes out to 16.
+
+            Since references can never be <tt>NULL</tt>, we are going to implement an optional reference optimization (ORO) that uses <tt>NULL</tt> reference value as the indicator that the underlying type is <tt>none</tt> and reduce the size of optional references back to 8.
+            Let's try it out!
+        </p>
+
+<pre class="inline_code">
+<span class="sl">$ bjou -I src_10mil src_10mil/bjou.bjou --stats --stats-no-files</span>
+<span class="sl">Parsed 127 files: 2.822000s</span>
+<span class="sl">Front-end: 2.822000s</span>
+<span class="sl">Back-end: 0ms</span>
+<span class="sl">Grand Total: 2.822000s</span>
+<span class="sl">12915132 lines of text @ 4576588 lines/s</span>
+<span class="sl">10015203 lines of code @ 3548973 lines/s</span>
+<span class="sl">221.0MB @ 78.3MB/s</span>
+<span class="sl">Max memory usage: 2.7GB</span>
+</pre>
+
+        <p>
+            Much better!
+            And if we take a look at the speed results again, we don't see any significant performance difference:
+        </p>
+
         <img style="display: block; margin-left: auto; margin-right: auto; width: 75%;" src="5.png"></img>
+
+        Parsing a million lines of codes in a quarter of a second with minimal memory usage is a great start to the self-hosted bJou compiler.
+        I look forward to seeing similar achievements in the near future with the rest of the compiler.
+        Thanks for reading!
 
 </body>
 
