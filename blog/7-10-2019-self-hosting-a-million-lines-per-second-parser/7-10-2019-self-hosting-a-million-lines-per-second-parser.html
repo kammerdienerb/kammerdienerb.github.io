@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>bJou</title>
+        <link rel="stylesheet" href="../../styles/basic.css">
+        <link rel="stylesheet" href="../../styles/source_code.css">
+    </head>
+
+<div class="topnav">
+    <a href="../../index.html" class="logo_a" id="logo_link"><img class="logo" src="../../images/logo_white.png"/><span class="logo_text">bJou</span></a>
+    <span id="navlinks">
+    <a href="../../install.html" class="nav_a">Install</a>
+    <a href="../../features.html" class="nav_a">Features</a>
+    <a href="../../learn.html" class="nav_a">Learn</a>
+    <a href="../../blog.html" class="nav_a active">Blog</a>
+    </span>
+</div>
+
+<body>
+
+<h1>Self Hosting a Million-Lines-Per-Second Parser</h1>
+    <div style="font-size:14px">July 10, 2019 by Brandon Kammerdiener</div>
+    
+    </br>
+
+    <p>
+        The bJou programming language is in the process of self-hosting its compiler.
+        The language has reached a point of capability and stability that enables us to write complicated programs (like its own compiler) in it.
+        This is a good opportunity to stress test the language and make sure its features, or lack thereof, feel like the right decisions.
+    </p>
+
+    <p>
+        Now, some people don't fully realize this, but computers are <b>FAST</b> and so I want bJou's new compiler to be as fast as it possibly can to provide the best experience for people who write code in bJou.
+        The usual first step to writing a compiler is to implement the part responsible for reading source files, tokenizing their contents (also called lexing or scanning), and parsing the tokens to create an internal data structure that represents all of the little pieces that make up the structure of a user's program.
+        This is also the time when the compiler does things like syntax checking.
+        While parsing is almost never the speed bottleneck of compilers, I think it's important to take the time and effort to make every part of this new compiler as fast as I can make it.
+    </p>
+
+    <p>
+        With that said, I set set this goal: a user should be able to run the parser on a million lines of code and have it checked for correct syntax in one second or less.
+        To put that into perspective, on my machine (2013 MacBook Pro, 2.3GHz Intel i7, 16GB DDR3), <tt>clang</tt> parses roughly 50,000 LOC/s (lines of code per second), <tt>go fmt</tt> churns through about 200,000 LOC/s, and bJou's bootstrapping compiler parses ~300,000 LOC/s. 
+    </p>
+
+    <p>
+        The rest of this post discusses some of the implementation techniques I used to achieve our goal (<b>SPOILER ALERT:</b> we end up doing way better than 1 million LOC/s).
+    </p>
+
+    <h2>Initial Implementation</h2>
+        <p>
+            bJou's bootstrapping compiler's parser is actually pretty fast, so I decided to mostly start with the same basic structure.
+            We use a hand-written, recursive descent parser that uses a precedence climbing method for expressions.
+            Additionally, there is no lexing phase -- tokenization is done in-line with parsing because the parser can generally be smarter about what kind of token to look for next.
+            One major difference is that the bootstrapping compiler (written in C++) represents the Abstract Syntax Tree (AST) as nodes allocated on the heap with pointers to their children.
+            It also relies heavily on runtime polymorphism.
+            This new compiler takes a different approach and uses bJou's sum types (also called tagged/discriminated unions) instead of inherited interfaces.
+            The advantage of this is that all nodes are now the same size and patching the AST becomes much easier.
+            There may also be benefits related to prefetching, cache locality, and less fragmentation in the heap (although, this last point is less relevant later on).
+            The type declaration for our AST type ends up looking something like this:
+<pre class="inline_code">
+<span class="sl"><span class="kw">type</span> ast = ( integerliteral | ifstmt | ...<i>more node kinds here</i>... | procdef )</span>
+</pre>
+        </p>
+
+        <p>
+            So, let's look at the results for this first iteration.
+            Some things to note when looking at this data:
+            <ul>
+                <li>
+                    Results are shown for different input sizes (10 thousand lines to 10 million lines).
+                    It's not enough to say that it can parse 10 thousand lines of code <i>at a rate</i> of one million LOC/s.
+                    The goal is to see that number realized for a million line input.
+                </li>
+                <li>
+                    The input is broken up into a little over 100 files and is representative of real source code.
+                    I used the actual compiler source as the 10k input and duplicated it to achieve larger inputs.
+                </li>
+                <li>
+                    The reported speeds are an average over 10 runs for each input size.
+                </li>
+                <li>
+                    LOC does not count newlines or comments.
+                    If straight lines of text per second is a metric you care about, adding about 25% is a decent estimate.
+                </li>
+            </ul>
+        </p>
+        
+        <img style="display: block; margin-left: auto; margin-right: auto; width: 75%;" src="1.png"></img>
+
+        <p>
+            175,000 LOC/s isn't bad, but we're far off from our goal.
+            Parsing one file has no influence on the parsing behavior of another file, so we'll explore the inherent parallelism first.
+        </p>
+
+    <h2>Threads</h2>
+        <p>
+            Right now, we're parsing slower than the bootstrapping compiler, which won't do.
+            The bootstrapping compiler uses threads to increase speed by launching parse threads in batches of <tt>N</tt> files or less where <tt>N</tt> is the number of available hardware threads.
+            This is better than parsing the files in sequence, but there is an clear downside: if <tt>N - 1</tt> of the files are tiny and the remaining file is large, the <tt>N - 1</tt> threads will be sitting idle waiting for the huge file to finish.
+            Our new compiler will do better by using what's called a thread pool.
+            This will create <tt>N</tt> threads that will continuously pull jobs from a job queue and execute them.
+            We'll use the <tt>threadpool</tt> bJou module:
+<pre class="inline_code">
+<span class="sl"><span class="kw">using</span> <span class="kw">import</span> <span class="str">"thread.bjou"</span></span>
+<span class="sl"><span class="kw">using</span> <span class="kw">import</span> <span class="str">"threadpool.bjou"</span></span>
+</pre>
+            And the basic process will look like this:
+<pre class="inline_code numbered">
+<span class="sl">pool := threadpool.create(thread::hw_threads())</span>
+<span class="sl">...</span>
+<span class="sl"><span class="cmt"># Encounter a file to parse.</span></span>
+<span class="sl">f := frontend::open_file(path, search_paths: true)</span>
+<span class="sl">p := async_parser.create(f)</span>
+<span class="sl">pool.add_task(async_parser_wrapper, p)</span>
+</pre>
+        </p>
+        
+        <p>
+            Using this process will ensure that all hardware threads are always busy churning on files.
+            Here are our new speeds:
+        </p>
+
+        <img style="display: block; margin-left: auto; margin-right: auto; width: 75%;" src="2.png"></img>
+        
+        <p>
+            Nice, over 2x speedup!
+            Still not good enough though.
+            Time to break out the profiler.
+        </p>
+    <h2>Allocation Bottleneck</h2>
+        <p>...</p>
+        <img style="display: block; margin-left: auto; margin-right: auto; width: 75%;" src="3.png"></img>
+    <h2>Strings</h2>
+        <p>...</p>
+        <img style="display: block; margin-left: auto; margin-right: auto; width: 75%;" src="4.png"></img>
+    <h2>Memory Footprint</h2>
+        <p>...</p>
+        <img style="display: block; margin-left: auto; margin-right: auto; width: 75%;" src="5.png"></img>
+
+</body>
+
+<footer>
+    <ul>
+        <li><a href="https://www.github.com/kammerdienerb/bJou" target="_blank"><img src="../../images/GitHub-Mark-120px-plus.png"/></a></li>
+        <li><a href="https://discord.gg/ZuDqxb8" target="_blank"><img src="../../images/Discord-Logo-Color.png"/></a></li>
+    </ul>
+    <span class="foot_txt">This website is open source and available on <a href="https://www.github.com/kammerdienerb/kammerdienerb.github.io" target="_blank">GitHub</a>.</span>
+</footer>
+</html>
