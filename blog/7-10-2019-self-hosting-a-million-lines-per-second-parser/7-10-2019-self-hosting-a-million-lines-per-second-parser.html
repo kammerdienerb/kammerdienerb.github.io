@@ -32,10 +32,10 @@
     </p>
 
     <p>
-        Now, some people don't fully realize this, but computers are <b>FAST</b>, and so I want bJou's new compiler to be as fast as it possibly can to provide the best experience for people who write code in bJou.
+        Now, some people don't fully realize this, but computers are <b>FAST</b>, and so I want bJou's new compiler to be as fast as possible to provide the best experience for people who write code in bJou.
         The usual first step to writing a compiler is to implement the part responsible for reading source files, <a href=https://en.wikipedia.org/wiki/Lexical_analysis">tokenizing</a> their contents (also called lexing or scanning), and parsing the tokens to create an internal data structure that represents all of the little pieces that make up the structure of a user's program.
         This is also the time when the compiler does things like syntax checking.
-        While parsing is almost never the speed bottleneck of compilers, I think it's important to take the time and effort to make every part of this new compiler as fast as I can make it.
+        While parsing is rarely the speed bottleneck of compilers, I think it's important to take the time and effort to make every part of this new compiler as fast as I can make it.
     </p>
 
     <p>
@@ -97,10 +97,10 @@
         <p>
             Right now, we're parsing slower than the bootstrapping compiler, which won't do.
             The bootstrapping compiler uses threads to increase speed by launching parse threads in batches of <tt>N</tt> files or less where <tt>N</tt> is the number of available hardware threads.
-            This is better than parsing the files in sequence, but there is an clear downside: if <tt>N - 1</tt> of the files are tiny and the remaining file is large, the <tt>N - 1</tt> threads will be sitting idle waiting for the huge file to finish.
+            This is better than parsing the files in sequence, but there is a clear downside: if <tt>N - 1</tt> of the files are tiny and the remaining file is large, the <tt>N - 1</tt> threads will be sitting idle waiting for the huge file to finish.
             Our new compiler will do better by using what's called a <a href="https://en.wikipedia.org/wiki/Thread_pool">thread pool</a>.
             This will create <tt>N</tt> threads that will continuously pull jobs from a job queue and execute them.
-            We'll use the <tt>threadpool</tt> bJou module:
+            We'll use the <tt>threadpool.bjou</tt> bJou module:
 <pre class="inline_code">
 <span class="sl"><span class="kw">using</span> <span class="kw">import</span> <span class="str">"thread.bjou"</span></span>
 <span class="sl"><span class="kw">using</span> <span class="kw">import</span> <span class="str">"threadpool.bjou"</span></span>
@@ -144,7 +144,7 @@
             Using an allocator like <tt>malloc</tt> is a relatively expensive operation -- even more so when it results in a system call like <tt>sbrk</tt> or <tt>mmap</tt>.
             Unfortunately, our profile shows that we are doing this all the time.
             This makes sense though given how we've structured our parser.
-            Every time we create new node we create in the AST we allocate space for it and allocate the initial slab for the dynamic array that holds its children.
+            Every time we create a new node in the AST we allocate space for it and allocate the initial slab for the dynamic array that holds its children.
             Calling <tt>malloc</tt> no less than two times per new node is slowing us down substantially.
             To speed up our parser, we need to try to limit allocations as much as possible.
         </p>
@@ -153,7 +153,7 @@
             Now what about <tt>transfer_to_fe</tt>?
             <tt>transfer_to_fe</tt> is a procedure that the threaded parsers use to move all of the stuff that they've parsed over to the main AST in the front end (<tt>fe</tt>).
             The profile shows us that this procedure is taking a lot of time and that most of that time is spent in <tt>memmove</tt> (copying data).
-            It's extra bad if this procedure is slow because this is one of the only places in the parsing code that uses a mutex to protect the main AST data structure.
+            The slowness of this procedure compounds because this is one of the only places in the parsing code that uses a <a href="https://en.wikipedia.org/wiki/Lock_(computer_science)">mutex</a> to protect the main AST data structure.
             Put simply, if one thread is moving its data to the front end, no other thread can until it is done.
             If this copying process is taking a long time, that's bad news.
         </p>
@@ -184,11 +184,11 @@
 
             Using a <tt>bucket_array</tt> to store our AST nodes will obviously reduce our calls to <tt>malloc</tt>, but what about our other problems?
             Since references into a <tt>bucket_array</tt> are stable, we can change the way our AST nodes are connected to their children.
-            Instead of holding a dynamic array that stores their children directly, nodes can now just hold individual references to each child.
+            Instead of holding a dynamic array that stores their children directly, nodes can now hold just individual references to each child.
             The children are then stored in the same <tt>bucket_array</tt> as their parent.
             This again removes an allocation (for the dynamic array) per node.
             Finally, the work done in <tt>transfer_to_fe</tt> is reduced dramatically due to the constant time merge operation.
-            Not only do we eliminate a large linear <tt>memmove</tt>, we do exactly <b>zero</b> copying now!
+            Not only do we eliminate a large <tt>O(N) memmove</tt>, we do exactly <b>zero</b> copying now!
         </p>
         
         <p>
@@ -206,7 +206,7 @@
         <p>
             Unsurprisingly, parsers do a lot of work on and with strings.            
             bJou used to come with a basic string type that does most of the nice things you can do with <tt>std::string</tt>, for example.
-            However, it was really not much more than a wrapper around a bJou dynamic array of <tt>char</tt>s.
+            However, it was really not much more than a wrapper around a bJou dynamic array of <tt>char</tt> data.
             This was fine, but for a high-performance parser, the cost incurred by strings allocating dynamic arrays can start to have an impact.
         </p>
 
@@ -253,8 +253,8 @@
 </pre>
 
         <p>
-            4.2 gigabytes of memory used to parse our 10 million line input.
-            While peak RSS numbers for compiling large projects with other compilers commonly gets in the GB range, we're going to want to reduce this number if we can.
+            4.2 gigabytes of memory is used to parse our 10 million line input.
+            While peak RSS numbers for compiling large projects with other compilers commonly get in the GB range, we're going to want to reduce this number if we can.
         </p>
         
         <p>
@@ -263,16 +263,16 @@
         </p>
         
         <p>
-            bJou represents sum types like <tt>(string | int)</tt> by giving space enough for a tag and the largest of the sub types.
+            bJou represents sum types like <tt>(string | int)</tt> by giving space enough for a 4 byte tag and the largest of the sub types.
             So,
-            <div style="text-align:center"><tt>sizeof (string | int) = sizeof string + sizeof tag_t</tt>.</div>
+            <div style="text-align:center"><tt>sizeof (string | int) = sizeof string + 4</tt></div>
             <br>
             A common use case of sum types is to safely wrap references, e.g. <tt>(ast ref | none)</tt>, which I'll call "optional references".
-            bJou uses a 32 bit tag, so
-            <div style="text-align:center"><tt>sizeof (ast ref | none) = sizeof ast ref + sizeof tag_t = 8 + 4 = 12</tt></div>
-            With padding for alignment, this actually comes out to 16.
+            For this case,
+            <div style="text-align:center"><tt>sizeof (ast ref | none) = sizeof ast ref + 4 = 8 + 4 = 12 bytes</tt></div>
+            With padding for alignment, this actually comes out to 16 bytes.
 
-            Since references can never be <tt>NULL</tt>, we are going to implement an optional reference optimization (ORO) that uses <tt>NULL</tt> reference value as the indicator that the underlying type is <tt>none</tt> and reduce the size of optional references back to 8.
+            Since references can never be <tt>NULL</tt>, we are going to implement an optional reference optimization (ORO) that uses <tt>NULL</tt> reference value as the indicator that the underlying type is <tt>none</tt> and reduce the size of optional references back to 8 bytes.
             Let's try it out!
         </p>
 
