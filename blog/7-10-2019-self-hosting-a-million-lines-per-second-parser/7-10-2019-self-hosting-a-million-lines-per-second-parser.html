@@ -33,7 +33,7 @@
 
     <p>
         Now, some people don't fully realize this, but computers are <b>FAST</b>, and so I want bJou's new compiler to be as fast as possible to provide the best experience for people who write code in bJou.
-        The usual first step to writing a compiler is to implement the part responsible for reading source files, <a href=https://en.wikipedia.org/wiki/Lexical_analysis">tokenizing</a> their contents (also called lexing or scanning), and parsing the tokens to create an internal data structure that represents all of the little pieces that make up the structure of a user's program.
+        The usual first step to writing a compiler is to implement the part responsible for reading source files, <a href=https://en.wikipedia.org/wiki/Lexical_analysis" target="_blank">tokenizing</a> their contents (also called lexing or scanning), and parsing the tokens to create an internal data structure that represents all of the little pieces that make up the structure of a user's program.
         This is also the time when the compiler does things like syntax checking.
         While parsing is rarely the speed bottleneck of compilers, I think it's important to take the time and effort to make every part of this new compiler as fast as I can make it.
     </p>
@@ -52,9 +52,9 @@
             bJou's bootstrapping compiler's parser is actually pretty fast, so I decided to mostly start with the same basic structure.
             We use a hand-written, recursive descent parser that uses a precedence climbing method for expressions.
             Additionally, there is no lexing phase -- tokenization is done in-line with parsing because the parser can generally be smarter about what kind of token to look for next.
-            One major difference is that the bootstrapping compiler (written in C++) represents the <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree">Abstract Syntax Tree</a> (AST) as nodes allocated on the heap with pointers to their children.
+            One major difference is that the bootstrapping compiler (written in C++) represents the <a href="https://en.wikipedia.org/wiki/Abstract_syntax_tree" target="_blank">Abstract Syntax Tree</a> (AST) as nodes allocated on the heap with pointers to their children.
             It also relies heavily on runtime polymorphism.
-            This new compiler takes a different approach and uses bJou's <a href="https://en.wikipedia.org/wiki/Tagged_union">sum types</a> (also called tagged/discriminated unions) instead of inherited interfaces.
+            This new compiler takes a different approach and uses bJou's <a href="https://en.wikipedia.org/wiki/Tagged_union" target="_blank">sum types</a> (also called tagged/discriminated unions) instead of inherited interfaces.
             The advantage of this is that all nodes are now the same size and patching the AST becomes much easier.
             There may also be benefits related to prefetching, cache locality, and less fragmentation in the heap (although, this last point is less relevant later on).
             The type declaration for our AST type ends up looking something like this:
@@ -98,7 +98,7 @@
             Right now, we're parsing slower than the bootstrapping compiler, which won't do.
             The bootstrapping compiler uses threads to increase speed by launching parse threads in batches of <tt>N</tt> files or less where <tt>N</tt> is the number of available hardware threads.
             This is better than parsing the files in sequence, but there is a clear downside: if <tt>N - 1</tt> of the files are tiny and the remaining file is large, the <tt>N - 1</tt> threads will be sitting idle waiting for the huge file to finish.
-            Our new compiler will do better by using what's called a <a href="https://en.wikipedia.org/wiki/Thread_pool">thread pool</a>.
+            Our new compiler will do better by using what's called a <a href="https://en.wikipedia.org/wiki/Thread_pool" target="_blank">thread pool</a>.
             This will create <tt>N</tt> threads that will continuously pull jobs from a job queue and execute them.
             We'll use the <tt>threadpool.bjou</tt> bJou module:
 <pre class="inline_code">
@@ -132,7 +132,7 @@
 
     <h2>Allocation and Thread Data Aggregation</h2>
         <p>
-            Profiling our parser using the million line input gives us a pretty flame graph that you can look at and explore <a href="profile.svg">here</a>.
+            Profiling our parser using the million line input gives us a pretty flame graph that you can look at and explore <a href="profile.svg" target="_blank">here</a>.
             As an exercise, look and see how many of the peaks end in calls to <tt>malloc</tt>.
             The answer is a lot.
             Now notice the really fat section at the end for a procedure called <tt>transfer_to_fe</tt> and how much time it's taking.
@@ -153,7 +153,7 @@
             Now what about <tt>transfer_to_fe</tt>?
             <tt>transfer_to_fe</tt> is a procedure that the threaded parsers use to move all of the stuff that they've parsed over to the main AST in the front end (<tt>fe</tt>).
             The profile shows us that this procedure is taking a lot of time and that most of that time is spent in <tt>memmove</tt> (copying data).
-            The slowness of this procedure compounds because this is one of the only places in the parsing code that uses a <a href="https://en.wikipedia.org/wiki/Lock_(computer_science)">mutex</a> to protect the main AST data structure.
+            The slowness of this procedure compounds because this is one of the only places in the parsing code that uses a <a href="https://en.wikipedia.org/wiki/Lock_(computer_science)" target="_blank">mutex</a> to protect the main AST data structure.
             Put simply, if one thread is moving its data to the front end, no other thread can until it is done.
             If this copying process is taking a long time, that's bad news.
         </p>
