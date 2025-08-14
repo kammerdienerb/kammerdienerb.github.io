@@ -10,7 +10,7 @@ body{
     line-height:1.6;
     font-size:18px;
     color:#444;
-    padding: 0 10px;
+    padding: 0 20px;
 }
 h1,h2,h3{line-height:1.2}
 .topnav {
@@ -58,9 +58,13 @@ h1,h2,h3{line-height:1.2}
     background-color: #4C556A;
 }
 .topnav .logo_text.active {
-    color: #2E3340;
+    color: #D8DEE8;
 }
-.topnav .logo_a.active, .nav_a.active{
+.topnav .logo_a.active{
+    background-color: #4C556A;
+    color: #D8DEE8;
+}
+.topnav .nav_a.active{
     background-color: #8FBCBB;
     color: #2E3340;
 }

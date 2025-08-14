@@ -1,61 +1,40 @@
 <!DOCTYPE html>
 <html>
-    <head>
+<head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>bJou</title>
+        <title>Brandon Kammerdiener</title>
         <link rel="stylesheet" href="styles/basic.css">
         <link rel="stylesheet" href="styles/source_code.css">
-        <script src="scripts/toggle_mobile_menu.js"></script> 
     </head>
 
 <div class="topnav">
-    <a href="index.html" class="active logo_a" id="logo_link"><img class="logo" src="images/logo_blue.png"/><span class="logo_text active">bJou</span></a>
+    <a href="index.html" class="active logo_a" id="logo_link"><span class="logo_text active">Brandon Kammerdiener</span></a>
     <span id="navlinks">
-    <a href="install.html" class="nav_a">Install</a>
-    <a href="features.html" class="nav_a">Features</a>
-    <a href="learn.html" class="nav_a">Learn</a>
+    <a href="index.html" class="nav_a active">About</a>
+    <a href="projects.html" class="nav_a">Projects</a>
     <a href="blog.html" class="nav_a">Blog</a>
+    <a href="contact.html" class="nav_a">Contact</a>
     </span>
 </div>
 
 <body>
-<header>
-    <h1>Program effectively. Compile quickly. Create fast code.</h1>
-</header>
+<figure>
+<img src="images/brandon-kammerdiener-ornl.jpg" style="width:100%">
+</figure>
 <p>
-bJou is a simple systems programming language that focuses on speed and effectiveness in both the process of programming and the generated programs.
-While the core of the language is relatively simple, bJou allows for limitless power of expressiveness through compile-time metaprogramming.
-    <a href="install.html">Try it out</a> and <a href="learn.html">learn more</a>.
+    I am a performance engineer working on <a href="https://www.brendangregg.com">Brendan Gregg's</a> team at Intel.
+    We develop advanced performance analysis tools used to solve performance problems in all layers of the software stack.
+
+    <br/>
+    <br/>
+    Before joining Intel, I graduated with my Ph.D. in Computer Science at the University of Tennessee, Knoxville.
+    While there, my focus was in developing low-level software systems aiming to improve the memory behavior of applications in more complex memory architectures.
+
+    <br/>
+    <br/>
+    I also work on several side projects in the areas of developer tools, programming language design, compilers, and operating systems.
 </p>
 
-<figure>
-<pre class="inline_code numbered">
-<span class="sl"><span class="kw">using</span> <span class="kw">import</span> <span class="str">"compiler.bjou"</span></span>
-<span class="sl"></span>
-<span class="sl"><span class="cmt"># run this at compile time</span></span>
-<span class="sl"><span class="kw">\static_do</span> {</span>
-<span class="sl">    <span class="cmt"># create the AST</span></span>
-<span class="sl">    message := bjou_createStringLiteral(<span class="str">"Hello, world!\n"</span>)</span>
-<span class="sl">    args    := bjou_createArgList(&amp;message, 1)</span>
-<span class="sl">    ident   := bjou_createIdentifier("printf")</span>
-<span class="sl">    call    := bjou_createCallExpression(ident, args)</span>
-<span class="sl"></span>
-<span class="sl">    <span class="cmt"># register symbols</span></span>
-<span class="sl">    bjou_addSymbols(call, bjou_getGlobalScope())</span>
-<span class="sl"></span>
-<span class="sl">    <span class="cmt"># add to our program</span></span>
-<span class="sl">    bjou_appendNode(call)</span>
-<span class="sl">}</span></pre>
-<figcaption> Building "Hello, world!" at compile time</figcaption>
-</figure>
-
 </body>
-<footer>
-    <ul>
-        <li><a href="https://www.github.com/kammerdienerb/bJou" target="_blank"><img src="images/GitHub-Mark-120px-plus.png"/></a></li>
-        <li><a href="https://discord.gg/ZuDqxb8" target="_blank"><img src="images/Discord-Logo-Color.png"/></a></li>
-    </ul>
-    <span class="foot_txt">This website is open source and available on <a href="https://www.github.com/kammerdienerb/kammerdienerb.github.io" target="_blank">GitHub</a>.</span>
-</footer>
 </html>

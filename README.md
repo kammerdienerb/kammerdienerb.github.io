@@ -1,2 +1,2 @@
 # kammerdienerb.github.io
-Website for bJou
+Personal website

@@ -9,12 +9,12 @@
     </head>
 
 <div class="topnav">
-    <a href="../../index.html" class="logo_a" id="logo_link"><img class="logo" src="../../images/logo_white.png"/><span class="logo_text">bJou</span></a>
+    <a href="../../index.html" class="active logo_a" id="logo_link"><span class="logo_text active">Brandon Kammerdiener</span></a>
     <span id="navlinks">
-    <a href="../../install.html" class="nav_a">Install</a>
-    <a href="../../features.html" class="nav_a">Features</a>
-    <a href="../../learn.html" class="nav_a">Learn</a>
+    <a href="../../index.html" class="nav_a">About</a>
+    <a href="../../projects.html" class="nav_a">Projects</a>
     <a href="../../blog.html" class="nav_a active">Blog</a>
+    <a href="../../contact.html" class="nav_a">Contact</a>
     </span>
 </div>
 
@@ -22,7 +22,7 @@
 
 <h1>Self Hosting a Million-Lines-Per-Second Parser</h1>
     <div style="font-size:14px">July 10, 2019 by Brandon Kammerdiener</div>
-    
+
     </br>
 
     <p>
@@ -40,7 +40,7 @@
 
     <p>
         With that said, I set this goal: a user should be able to run the parser on a million lines of code and have it checked for correct syntax in one second or less.
-        To put that into perspective, on my machine (2013 MacBook Pro, 2.3GHz Intel i7, 16GB DDR3), <tt>clang</tt> parses roughly 50,000 LOC/s (lines of code per second), <tt>go fmt</tt> churns through about 200,000 LOC/s, and bJou's bootstrapping compiler parses ~300,000 LOC/s. 
+        To put that into perspective, on my machine (2013 MacBook Pro, 2.3GHz Intel i7, 16GB DDR3), <tt>clang</tt> parses roughly 50,000 LOC/s (lines of code per second), <tt>go fmt</tt> churns through about 200,000 LOC/s, and bJou's bootstrapping compiler parses ~300,000 LOC/s.
     </p>
 
     <p>
@@ -85,7 +85,7 @@
                 </li>
             </ul>
         </p>
-        
+
         <img style="display: block; margin-left: auto; margin-right: auto; width: 75%;" src="1.png"></img>
 
         <p>
@@ -115,14 +115,14 @@
 <span class="sl">pool.add_task(async_parser_wrapper, p)</span>
 </pre>
         </p>
-        
+
         <p>
             Using this method will ensure that all hardware threads are always busy churning away on files.
             Here are our new speeds:
         </p>
 
         <img style="display: block; margin-left: auto; margin-right: auto; width: 75%;" src="2.png"></img>
-        
+
         <p>
             Nice, over 2x speedup!
             Still not good enough though, not to mention that the 10 million line input size didn't benefit at all.
@@ -139,7 +139,7 @@
             Hmmm...
             Let's unpack what the profiler is telling us starting with <tt>malloc</tt>.
         </p>
-        
+
         <p>
             Using an allocator like <tt>malloc</tt> is a relatively expensive operation -- even more so when it results in a system call like <tt>sbrk</tt> or <tt>mmap</tt>.
             Unfortunately, our profile shows that we are doing this all the time.
@@ -178,7 +178,7 @@
                 <li>
                     <b>Referential stability.</b>
                     This means that once we push an item into it, it won't be relocated out from under us.
-                    The great advantage of this is that we can keep references to the item and they won't be invalidated. 
+                    The great advantage of this is that we can keep references to the item and they won't be invalidated.
                 </li>
             </ul>
 
@@ -190,11 +190,11 @@
             Finally, the work done in <tt>transfer_to_fe</tt> is reduced dramatically due to the constant time merge operation.
             Not only do we eliminate a large <tt>O(N) memmove</tt>, we do exactly <b>zero</b> copying now!
         </p>
-        
+
         <p>
             The results speak for themselves:
         </p>
-        
+
         <img style="display: block; margin-left: auto; margin-right: auto; width: 75%;" src="3.png"></img>
 
         <p>
@@ -204,7 +204,7 @@
 
     <h2>Strings</h2>
         <p>
-            Unsurprisingly, parsers do a lot of work on and with strings.            
+            Unsurprisingly, parsers do a lot of work on and with strings.
             bJou used to come with a basic string type that does most of the nice things you can do with <tt>std::string</tt>, for example.
             However, it was really not much more than a wrapper around a bJou dynamic array of <tt>char</tt> data.
             This was fine, but for a high-performance parser, the cost incurred by strings allocating dynamic arrays can start to have an impact.
@@ -222,7 +222,7 @@
             If you use only 1 byte to store the length of the string and one byte to store a zero byte at the end, that gives you 22 bytes left.
             So, you can store a short string (less than 23 bytes) directly in the string itself and avoid an allocation.
         </p>
-        
+
         <p>
             This is a pretty neat optimization and perfect for our parser because nearly all of the strings (tokens) that the parser operates on are short!
             Implementing this into bJou's string type gave us this speed boost:
@@ -256,12 +256,12 @@
             4.2 gigabytes of memory is used to parse our 10 million line input.
             While peak RSS numbers for compiling large projects with other compilers commonly get in the GB range, we're going to want to reduce this number if we can.
         </p>
-        
+
         <p>
             There is one area in the bootstrapping compiler that I believe can be improved and lower the memory usage for the new compiler.
             Specifically, we are going to try to optimize code generation for a special case of sum types.
         </p>
-        
+
         <p>
             bJou represents sum types like <tt>(string | int)</tt> by giving space enough for a 4 byte tag and the largest of the sub types.
             So,
